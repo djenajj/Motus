@@ -89,9 +89,9 @@ ils n'ont PAS besoin que les autres services tournent.
    La réponse contient la liste des propositions avec, pour chacune,
    le résultat encodé (ex. "BIEN_PLACEE,ABSENTE,MAL_PLACEE,...").
 
-3. Consulter l'état de la partie :
+3. Abandonner la partie (elle passe au statut PERDUE) :
 
-       curl http://localhost:8082/api/parties/1
+       curl -X POST http://localhost:8082/api/parties/1/abandon
 
 ## API REST exposées
 
@@ -99,9 +99,8 @@ ils n'ont PAS besoin que les autres services tournent.
 |---------|-------------------------------------|------------------------------|
 | POST    | /api/parties                        | Crée une partie              |
 | GET     | /api/parties                        | Liste les parties (admin)    |
-| GET     | /api/parties/{id}                   | État d'une partie            |
 | POST    | /api/parties/{id}/propositions      | Soumet une proposition       |
-| GET     | /api/parties/{id}/propositions      | Historique des essais        |
+| POST    | /api/parties/{id}/abandon           | Abandonne une partie (→ PERDUE) |
 
 ## L'algorithme Motus
 

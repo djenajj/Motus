@@ -1,11 +1,7 @@
 package fr.dauphine.miage.motus.partie;
 
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -108,15 +104,6 @@ class PartieControllerTest {
     }
 
     /**
-     * Consulter une partie inexistante doit renvoyer 404.
-     */
-    @Test
-    void getPartie_inexistante_renvoie404() throws Exception {
-        mockMvc.perform(get("/api/parties/9999"))
-                .andExpect(status().isNotFound());
-    }
-
-    /**
      * Proposer un mot qui n'existe pas dans le dictionnaire doit
      * etre refuse (400), sans meme calculer de reponse Motus.
      * Ce test verifie que le Service Dico est bien consulte
@@ -167,35 +154,17 @@ class PartieControllerTest {
     }
 
     /**
-     * Mode "jouer sans compte" : une partie creee sans joueurId doit
-     * fonctionner normalement, mais aucun resultat ne doit jamais
-     * etre envoye au Service Joueur (pas d'historique, pas de
-     * classement), meme une fois la partie gagnee.
-     *
-     * L'id de la partie est extrait dynamiquement de la reponse
-     * (et non suppose egal a 1) : la base H2 est partagee entre
-     * toutes les methodes de cette classe de test, donc l'id reel
-     * depend des parties deja creees par les tests precedents.
+     * Creer une partie sans joueurId doit etre refuse (400) : un
+     * compte est desormais obligatoire pour jouer.
      */
     @Test
-    void proposerMot_sansJoueurId_neContactePasServiceJoueur() throws Exception {
+    void creerPartie_sansJoueurId_renvoie400() throws Exception {
         when(dicoClient.tirerMotMystere(anyInt())).thenReturn("MAISON");
-        when(dicoClient.motExiste(anyString())).thenReturn(true);
 
-        String reponseCreation = mockMvc.perform(post("/api/parties")
+        mockMvc.perform(post("/api/parties")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"longueur\":6}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.joueurId").doesNotExist())
-                .andReturn().getResponse().getContentAsString();
-        int id = com.jayway.jsonpath.JsonPath.read(reponseCreation, "$.id");
-
-        mockMvc.perform(post("/api/parties/" + id + "/propositions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"motPropose\":\"MAISON\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statut").value("GAGNEE"));
-
-        verify(joueurClient, never()).envoyerResultat(anyLong(), anyLong(), anyBoolean(), anyInt());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreur").value("Coup invalide"));
     }
 }

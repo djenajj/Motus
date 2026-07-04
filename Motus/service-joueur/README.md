@@ -50,17 +50,11 @@ Le service démarre sur le port **8081**.
 
 Une fois le service démarré :
 
-- Liste des joueurs :
-  http://localhost:8081/api/joueurs
-
 - Classement par score :
   http://localhost:8081/api/joueurs/classement
 
 - Consulter un joueur :
   http://localhost:8081/api/joueurs/1
-
-- Historique d'un joueur :
-  http://localhost:8081/api/joueurs/1/resultats
 
 - Console H2 :
   http://localhost:8081/h2-console
@@ -77,11 +71,11 @@ Enregistrer un joueur (POST), avec curl :
 | Méthode | URI                            | Description                    |
 |---------|--------------------------------|--------------------------------|
 | POST    | /api/joueurs                   | Enregistre un joueur           |
-| GET     | /api/joueurs                   | Liste tous les joueurs         |
+| POST    | /api/joueurs/connexion         | Connexion (pseudo + mot de passe) |
 | GET     | /api/joueurs/classement        | Classement par score           |
 | GET     | /api/joueurs/{id}              | Consulte un joueur             |
 | POST    | /api/joueurs/{id}/resultats    | Enregistre un résultat         |
-| GET     | /api/joueurs/{id}/resultats    | Historique d'un joueur         |
+| GET     | /api/joueurs/{id}/est-admin    | Rôle ADMIN ? (appel interne)   |
 
 ## Calcul du score
 

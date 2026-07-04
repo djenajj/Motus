@@ -25,9 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * API exposees :
  *   POST /api/parties                     -> creer une partie
  *   GET  /api/parties                     -> lister les parties (admin)
- *   GET  /api/parties/{id}                -> etat d'une partie
  *   POST /api/parties/{id}/propositions   -> proposer un mot
- *   GET  /api/parties/{id}/propositions   -> historique des essais
  *   POST /api/parties/{id}/abandon        -> abandonner une partie (-> PERDUE)
  */
 @RestController
@@ -76,15 +74,6 @@ public class PartieController {
     }
 
     /**
-     * GET /api/parties/{id}
-     * Renvoie l'etat courant d'une partie.
-     */
-    @GetMapping("/{id}")
-    public PartieVue getPartie(@PathVariable Long id) {
-        return new PartieVue(partieService.trouverPartie(id));
-    }
-
-    /**
      * POST /api/parties/{id}/propositions
      * Soumet une proposition de mot.
      * Corps : { "motPropose": "MAISON" }
@@ -94,15 +83,6 @@ public class PartieController {
             @PathVariable Long id,
             @RequestBody ProposerMotRequete requete) {
         return new PartieVue(partieService.proposerMot(id, requete.motPropose));
-    }
-
-    /**
-     * GET /api/parties/{id}/propositions
-     * Renvoie l'historique des essais d'une partie.
-     */
-    @GetMapping("/{id}/propositions")
-    public List<Proposition> listerPropositions(@PathVariable Long id) {
-        return partieService.listerPropositions(id);
     }
 
     /**

@@ -34,12 +34,12 @@ public class Partie {
      * Identifiant du joueur (gere par le Service Joueur).
      * Pas de cle etrangere : les bases sont separees.
      *
-     * Nullable : le mode "jouer sans compte" permet de faire une
-     * partie sans identifier de joueur. Dans ce cas, aucun resultat
-     * n'est envoye au Service Joueur a la fin de la partie (pas
-     * d'historique, pas de classement) - voir PartieService.proposerMot.
+     * Obligatoire : un compte est necessaire pour jouer. La creation
+     * d'une partie sans joueur est refusee (voir
+     * PartieService.creerPartie), et le resultat de chaque partie
+     * terminee est envoye au Service Joueur (historique + classement).
      */
-    @Column(nullable = true)
+    @Column(nullable = false)
     private Long joueurId;
 
     /**

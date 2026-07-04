@@ -1,6 +1,5 @@
 package fr.dauphine.miage.motus.dico;
 
-import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
  * commencent par /api/mots (notion de "ressource" du modele REST).
  *
  * API exposees :
- *   GET  /api/mots                       -> liste tous les mots
  *   GET  /api/mots/aleatoire?longueur=7  -> tire un mot mystere
  *   GET  /api/mots/existe?valeur=MAISON  -> verifie l'existence
  *   POST /api/mots                       -> ajoute un mot
@@ -37,15 +35,6 @@ public class DicoController {
 
     public DicoController(DicoService dicoService) {
         this.dicoService = dicoService;
-    }
-
-    /**
-     * GET /api/mots
-     * Renvoie la liste complete des mots du dictionnaire.
-     */
-    @GetMapping
-    public List<Mot> listerMots() {
-        return dicoService.listerTousLesMots();
     }
 
     /**

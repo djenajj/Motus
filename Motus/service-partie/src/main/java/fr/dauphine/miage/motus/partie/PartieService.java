@@ -93,10 +93,8 @@ public class PartieService {
         partie.setDateFin(LocalDateTime.now());
         partieRepository.save(partie);
 
-        if (partie.getJoueurId() != null) {
-            joueurClient.envoyerResultat(
-                    partie.getJoueurId(), partie.getId(), false, partie.getNbEssaisUtilises());
-        }
+        joueurClient.envoyerResultat(
+                partie.getJoueurId(), partie.getId(), false, partie.getNbEssaisUtilises());
         return partie;
     }
 
@@ -177,7 +175,7 @@ public class PartieService {
 
         // 7. Si la partie est terminee, on previent le Service Joueur pour
         //    qu'il historise le resultat et mette a jour le score.
-        if (partie.getStatut() != StatutPartie.EN_COURS && partie.getJoueurId() != null) {
+        if (partie.getStatut() != StatutPartie.EN_COURS) {
             joueurClient.envoyerResultat(
                     partie.getJoueurId(),
                     partie.getId(),
@@ -186,14 +184,6 @@ public class PartieService {
         }
 
         return partie;
-    }
-
-    /**
-     * Renvoie la liste des propositions d'une partie.
-     */
-    @Transactional(readOnly = true)
-    public List<Proposition> listerPropositions(Long partieId) {
-        return trouverPartie(partieId).getPropositions();
     }
 
     /**
@@ -216,8 +206,7 @@ public class PartieService {
                     "Seul un administrateur peut consulter la liste des parties.");
         }
         return partieRepository.findAll().stream()
-                // joueurId == null cote partie -> partie jouee sans compte,
-                // ne correspond a aucun filtre par joueur precis.
+                // joueurId (parametre) == null -> pas de filtre par joueur.
                 .filter(p -> joueurId == null
                         || joueurId.equals(p.getJoueurId()))
                 .filter(p -> statut == null || statut.isBlank()

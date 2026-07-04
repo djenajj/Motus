@@ -20,11 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * API exposees :
  *   POST /api/joueurs                    -> enregistrer un joueur
- *   GET  /api/joueurs                    -> lister les joueurs
+ *   POST /api/joueurs/connexion          -> connexion (pseudo + mot de passe)
  *   GET  /api/joueurs/classement         -> classement par score
  *   GET  /api/joueurs/{id}               -> consulter un joueur
  *   POST /api/joueurs/{id}/resultats     -> enregistrer un resultat
- *   GET  /api/joueurs/{id}/resultats     -> historique d'un joueur
+ *   GET  /api/joueurs/{id}/est-admin     -> role ADMIN ? (appel interne)
  */
 @RestController
 @RequestMapping("/api/joueurs")
@@ -60,15 +60,6 @@ public class JoueurController {
     public ResponseEntity<Joueur> enregistrer(@Valid @RequestBody Joueur joueur) {
         Joueur cree = joueurService.enregistrerJoueur(joueur);
         return ResponseEntity.status(HttpStatus.CREATED).body(cree);
-    }
-
-    /**
-     * GET /api/joueurs
-     * Renvoie la liste de tous les joueurs.
-     */
-    @GetMapping
-    public List<Joueur> lister() {
-        return joueurService.listerJoueurs();
     }
 
     /**
@@ -108,15 +99,6 @@ public class JoueurController {
             @RequestBody Resultat resultat) {
         Resultat enregistre = joueurService.enregistrerResultat(id, resultat);
         return ResponseEntity.status(HttpStatus.CREATED).body(enregistre);
-    }
-
-    /**
-     * GET /api/joueurs/{id}/resultats
-     * Renvoie l'historique des parties d'un joueur.
-     */
-    @GetMapping("/{id}/resultats")
-    public List<Resultat> historique(@PathVariable Long id) {
-        return joueurService.historique(id);
     }
 
     /**

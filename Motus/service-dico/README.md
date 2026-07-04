@@ -47,9 +47,6 @@ Le service démarre sur le port **8083**.
 
 Une fois le service démarré :
 
-- Liste des mots :
-  http://localhost:8083/api/mots
-
 - Mot mystère aléatoire de 7 lettres :
   http://localhost:8083/api/mots/aleatoire?longueur=7
 
@@ -70,7 +67,6 @@ Pour ajouter un mot (méthode POST), avec curl :
 
 | Méthode | URI                              | Description                       |
 |---------|----------------------------------|-----------------------------------|
-| GET     | /api/mots                        | Liste tous les mots               |
 | GET     | /api/mots/aleatoire?longueur=N   | Tire un mot mystère de N lettres  |
 | GET     | /api/mots/existe?valeur=MOT      | Vérifie si un mot existe          |
 | POST    | /api/mots                        | Ajoute un mot au dictionnaire     |

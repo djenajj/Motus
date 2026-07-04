@@ -31,17 +31,6 @@ class DicoControllerTest {
     private MockMvc mockMvc;
 
     /**
-     * Verifie que GET /api/mots renvoie bien la liste des mots
-     * et un code 200 OK.
-     */
-    @Test
-    void listerMots_renvoieLaListe() throws Exception {
-        mockMvc.perform(get("/api/mots"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
-    }
-
-    /**
      * Verifie que GET /api/mots/aleatoire?longueur=6 renvoie
      * bien un mot de 6 lettres.
      */

@@ -15,15 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class JoueurService {
 
     private final JoueurRepository joueurRepository;
-    private final ResultatRepository resultatRepository;
 
     /**
-     * Injection par constructeur des deux repositories.
+     * Injection par constructeur du repository des joueurs.
      */
-    public JoueurService(JoueurRepository joueurRepository,
-                         ResultatRepository resultatRepository) {
+    public JoueurService(JoueurRepository joueurRepository) {
         this.joueurRepository = joueurRepository;
-        this.resultatRepository = resultatRepository;
     }
 
     /**
@@ -55,13 +52,6 @@ public class JoueurService {
         return joueurRepository.findById(id)
                 .orElseThrow(() -> new JoueurIntrouvableException(
                         "Aucun joueur avec l'id " + id));
-    }
-
-    /**
-     * Renvoie la liste complete des joueurs.
-     */
-    public List<Joueur> listerJoueurs() {
-        return joueurRepository.findAll();
     }
 
     /**
@@ -116,15 +106,6 @@ public class JoueurService {
         joueurRepository.save(joueur);
 
         return resultat;
-    }
-
-    /**
-     * Renvoie l'historique des resultats d'un joueur, du plus
-     * recent au plus ancien.
-     */
-    public List<Resultat> historique(Long joueurId) {
-        Joueur joueur = trouverJoueur(joueurId);
-        return resultatRepository.findByJoueurOrderByDatePartieDesc(joueur);
     }
 
     /**

@@ -29,16 +29,6 @@ class JoueurControllerTest {
     private MockMvc mockMvc;
 
     /**
-     * GET /api/joueurs doit renvoyer la liste des joueurs (200 OK).
-     */
-    @Test
-    void listerJoueurs_renvoieLaListe() throws Exception {
-        mockMvc.perform(get("/api/joueurs"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
-    }
-
-    /**
      * POST /api/joueurs doit creer un joueur et renvoyer 201 CREATED.
      */
     @Test

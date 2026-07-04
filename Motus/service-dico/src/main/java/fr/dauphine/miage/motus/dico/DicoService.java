@@ -74,13 +74,6 @@ public class DicoService {
     }
 
     /**
-     * Renvoie la liste complete des mots du dictionnaire.
-     */
-    public List<Mot> listerTousLesMots() {
-        return motRepository.findAll();
-    }
-
-    /**
      * Ajoute un nouveau mot au dictionnaire.
      *
      * Deux controles avant d'accepter le mot :

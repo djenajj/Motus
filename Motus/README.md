@@ -3,7 +3,7 @@
 Projet **M2 MIAGE SITN — Applications Web orientées Services** (M. Menceur, 2025‑2026).
 Application de gestion du jeu **Motus** réalisée sous forme de **microservices Spring Boot**.
 
-**Binôme :** Djena Haddar · Jules _(à compléter)_
+**Binôme :** Djena Haddar · Jules Maurice
 
 ---
 
@@ -50,15 +50,17 @@ Communication **REST** entre services ; persistance **JPA / Spring Data** sur **
 | Build | Maven |
 | Conteneurisation | Docker / Docker Compose |
 
-> **Note JDK.** Le projet cible Java 21 (`<java.version>21</java.version>`). Il compile et s'exécute aussi avec un JDK plus récent (testé sur **JDK 26**). Seule subtilité : Mockito (tests de `service-partie`) nécessite le flag `-Dnet.bytebuddy.experimental=true` sur JDK 26 — déjà configuré dans le `pom.xml` du service. En conteneur, le build utilise un JDK 21 (aucun impact).
+> **Note JDK.** Le projet cible Java 21 (`<java.version>21</java.version>`). Il compile et s'exécute aussi avec un JDK plus récent (testé sur **JDK 26**).
 
-## 3. Lancement rapide (Docker — recommandé)
+## 3. Lancement
 
 Prérequis : **Docker Desktop** démarré.
 
 ```bash
 docker compose up -d --build
 ```
+
+à exécuter dans le dossier du projet
 
 Puis ouvrir le client web : **http://localhost:8090**
 
@@ -78,7 +80,9 @@ Arrêt : `docker compose down` (ajouter `-v` pour effacer aussi les données Pos
 ## 4. Utilisation
 
 ### Jouer
-Depuis l'accueil, on peut **jouer immédiatement sans compte** (la partie n'est alors ni historisée ni classée), ou **créer un compte / se connecter** (pseudo + mot de passe) pour sauvegarder ses scores et apparaître au classement.
+**Un compte est obligatoire pour jouer.** À l'ouverture, l'écran d'accueil propose de **se connecter** ou de **créer un compte** (pseudo + mot de passe). Une fois connecté, le joueur accède à son profil (statistiques + historique), choisit la longueur du mot (5 à 8 lettres) et lance une partie. Chaque partie terminée est automatiquement historisée et prise en compte dans le classement.
+
+> Les **comptes administrateur ne jouent pas** de partie : à la place de leur profil, ils accèdent au tableau de bord d'administration (voir ci-dessous).
 
 ### Espace d'administration
 Se connecter avec le **compte administrateur créé automatiquement** :
@@ -87,21 +91,3 @@ Se connecter avec le **compte administrateur créé automatiquement** :
 - **mot de passe :** `admin123`
 
 Le tableau de bord admin permet de **lister / rechercher les parties** par joueur, statut et plage de dates, de trier par date ou performance, et d'**ajouter un mot** au dictionnaire.
-
-## 5. Lancement en local (sans Docker)
-
-Nécessite un **PostgreSQL local** sur `:5432` avec les bases `joueurdb`, `partiedb`, `dicodb` (voir `postgres-init/init-databases.sql`) et l'utilisateur `motus`/`motus`.
-Puis, dans quatre terminaux :
-
-```bash
-cd service-dico    && ./mvnw spring-boot:run
-cd service-joueur  && ./mvnw spring-boot:run
-cd service-partie  && ./mvnw spring-boot:run
-cd service-gateway && ./mvnw spring-boot:run
-```
-
-Ouvrir `client-web/index.html` dans le navigateur.
-
-## 6. Tests
-
-Chaque service : `./mvnw test`. Les tests d'intégration (`@SpringBootTest`) utilisent une base **H2** en mémoire et servent aussi de client de démonstration des API.
