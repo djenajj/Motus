@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  *   GET  /api/parties/{id}                -> etat d'une partie
  *   POST /api/parties/{id}/propositions   -> proposer un mot
  *   GET  /api/parties/{id}/propositions   -> historique des essais
+ *   POST /api/parties/{id}/abandon        -> abandonner une partie (-> PERDUE)
  */
 @RestController
 @RequestMapping("/api/parties")
@@ -42,10 +43,9 @@ public class PartieController {
 
     /**
      * POST /api/parties
-     * Cree une nouvelle partie. joueurId est optionnel : sans lui
-     * (mode "jouer sans compte"), la partie n'est ni historisee ni
-     * comptee au classement.
-     * Corps : { "joueurId": 1, "longueur": 7 } ou { "longueur": 7 }
+     * Cree une nouvelle partie. joueurId est obligatoire (il faut un
+     * compte pour jouer) et ne doit pas etre un compte ADMIN.
+     * Corps : { "joueurId": 1, "longueur": 7 }
      */
     @PostMapping
     public ResponseEntity<PartieVue> creerPartie(
@@ -103,5 +103,15 @@ public class PartieController {
     @GetMapping("/{id}/propositions")
     public List<Proposition> listerPropositions(@PathVariable Long id) {
         return partieService.listerPropositions(id);
+    }
+
+    /**
+     * POST /api/parties/{id}/abandon
+     * Abandonne une partie en cours : elle passe au statut PERDUE
+     * (jamais laissee EN_COURS).
+     */
+    @PostMapping("/{id}/abandon")
+    public PartieVue abandonner(@PathVariable Long id) {
+        return new PartieVue(partieService.abandonnerPartie(id));
     }
 }

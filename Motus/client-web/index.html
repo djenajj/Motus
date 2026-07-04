@@ -266,11 +266,11 @@
         caret-color: var(--bleu-vif);
     }
     .case-saisie:focus { outline: none; border-color: var(--bleu-vif); box-shadow: 0 0 0 3px rgba(61,90,241,0.2); }
-    .case-saisie:disabled { opacity: 0.6; }
-    /* 1re case : lettre donnee au depart (verrouillee, non saisissable) */
+    /* 1re case : lettre donnee au depart, affichee en vert mais reste
+       librement modifiable (comme toutes les autres cases). */
     .case-saisie.donnee {
         background: var(--vert); border-color: var(--vert);
-        color: #fff; opacity: 1; cursor: default;
+        color: #fff;
     }
 
     /* ----- Saisie ----- */
@@ -361,7 +361,9 @@
 <div class="sous-titre">Trouvez le mot mystère</div>
 
 <!-- ===================== ÉCRAN AUTH ===================== -->
-<div class="panneau" id="zone-auth" style="display:none">
+<!-- Ecran par defaut au chargement : un compte est obligatoire pour -->
+<!-- jouer (plus de mode "jouer sans compte"). -->
+<div class="panneau" id="zone-auth">
     <div class="tabs">
         <button class="tab actif" id="tab-connexion" onclick="afficherTab('connexion')">Se connecter</button>
         <button class="tab" id="tab-inscription" onclick="afficherTab('inscription')">Créer un compte</button>
@@ -392,8 +394,6 @@
         <button class="btn-principal" onclick="sInscrire()">Créer mon compte</button>
         <div class="msg-inline" id="msg-inscription"></div>
     </div>
-
-    <button class="btn-secondaire" onclick="afficherEcran('zone-config')">&larr; Retour (jouer sans compte)</button>
 </div>
 
 <!-- ===================== ÉCRAN PROFIL ===================== -->
@@ -418,7 +418,8 @@
         </div>
     </div>
 
-    <button class="btn-principal" onclick="allerConfigPartie()">▶ Jouer</button>
+    <button class="btn-principal" id="btn-jouer-profil" onclick="allerConfigPartie()">▶ Jouer</button>
+    <div class="msg-inline ok" id="msg-admin-no-play" style="display:none">Les comptes administrateur ne jouent pas de partie.</div>
 
     <div id="zone-historique">
         <div class="titre-section">Mes dernières parties</div>
@@ -432,9 +433,9 @@
 </div>
 
 <!-- ===================== ÉCRAN CONFIG / ACCUEIL ===================== -->
-<!-- Ecran par defaut au chargement : jouer est possible immediatement, -->
-<!-- sans compte (le score ne sera alors ni historise ni classe). -->
-<div class="panneau" id="zone-config">
+<!-- Accessible uniquement depuis le profil (bouton "▶ Jouer") : il faut -->
+<!-- donc deja etre connecte pour atteindre cet ecran. -->
+<div class="panneau" id="zone-config" style="display:none">
     <div class="config-ligne">
         <label for="select-longueur">Longueur du mot</label>
         <select id="select-longueur">
@@ -445,8 +446,7 @@
         </select>
     </div>
     <button class="btn-principal" id="btn-demarrer" onclick="demarrerPartie()">▶ Jouer</button>
-    <button class="btn-secondaire" id="btn-config-retour-profil" onclick="retourProfil()" style="display:none">Retour au profil</button>
-    <button class="btn-secondaire" id="btn-config-connexion" onclick="afficherEcran('zone-auth')">Se connecter pour sauvegarder mes scores</button>
+    <button class="btn-secondaire" onclick="afficherEcranProfil()">Retour au profil</button>
     <div class="msg-inline" id="msg-config"></div>
 </div>
 
@@ -501,7 +501,7 @@
         </div>
     </div>
 
-    <button class="btn-secondaire" onclick="retourProfil()">Abandonner</button>
+    <button class="btn-secondaire" onclick="abandonnerPartie()">Abandonner</button>
 </div>
 
 <!-- ===================== CLASSEMENT ===================== -->
@@ -608,10 +608,10 @@ const $ = (id) => document.getElementById(id);
 
 window.addEventListener("DOMContentLoaded", () => {
     chargerClassement();
-    // Ecran d'accueil par defaut : zone-config (jouer immediatement,
-    // sans compte). La zone admin reste masquee tant qu'aucun compte
-    // ADMIN n'est connecte (voir afficherEcranProfil).
-    majBoutonsConfig();
+    // Ecran d'accueil par defaut : connexion/inscription. Un compte est
+    // obligatoire pour jouer. La zone admin reste masquee tant qu'aucun
+    // compte ADMIN n'est connecte (voir afficherEcranProfil).
+    afficherEcran("zone-auth");
     $("login-mdp").addEventListener("keydown",  e => { if (e.key === "Enter") connecter(); });
     $("inscr-mdp").addEventListener("keydown",  e => { if (e.key === "Enter") sInscrire(); });
 });
@@ -678,7 +678,7 @@ function seDeconnecter() {
     $("login-pseudo").value = "";
     $("login-mdp").value    = "";
     $("zone-admin").style.display = "none";
-    afficherEcran("zone-config");
+    afficherEcran("zone-auth");
     chargerClassement();
 }
 
@@ -719,44 +719,22 @@ async function afficherEcranProfil() {
             });
     }
 
-    // La zone d'administration n'est visible que pour le role ADMIN.
-    if (joueurConnecte.role === "ADMIN") {
-        $("zone-admin").style.display = "block";
-        chargerAdmin();
-    } else {
-        $("zone-admin").style.display = "none";
-    }
+    // La zone d'administration n'est visible que pour le role ADMIN ;
+    // un compte ADMIN ne joue pas de partie, donc le bouton "Jouer" est
+    // remplace par un message explicatif.
+    const estAdmin = joueurConnecte.role === "ADMIN";
+    $("zone-admin").style.display      = estAdmin ? "block" : "none";
+    $("btn-jouer-profil").style.display = estAdmin ? "none"  : "block";
+    $("msg-admin-no-play").style.display = estAdmin ? "block" : "none";
+    if (estAdmin) chargerAdmin();
 
-    majBoutonsConfig();
     afficherEcran("zone-profil");
     chargerClassement();
 }
 
-/**
- * Bascule l'affichage des boutons secondaires de l'ecran d'accueil
- * (zone-config) selon qu'un compte est connecte ou non : un joueur
- * connecte peut retourner a son profil, un visiteur anonyme se voit
- * proposer de se connecter (pour que ses scores soient sauvegardes).
- */
-function majBoutonsConfig() {
-    $("btn-config-retour-profil").style.display = joueurConnecte ? "block" : "none";
-    $("btn-config-connexion").style.display      = joueurConnecte ? "none"  : "block";
-}
-
 function allerConfigPartie() {
     resetMsg("msg-config");
-    $("btn-demarrer").disabled = false;
-    majBoutonsConfig();
     afficherEcran("zone-config");
-}
-
-function retourProfil() {
-    if (joueurConnecte) {
-        afficherEcranProfil();
-    } else {
-        majBoutonsConfig();
-        afficherEcran("zone-config");
-    }
 }
 
 // =====================================================================
@@ -766,12 +744,7 @@ async function demarrerPartie() {
     longueurMot = parseInt($("select-longueur").value, 10);
     resetMsg("msg-config");
     $("btn-demarrer").disabled = true;
-    // Sans compte connecte, on ne transmet pas de joueurId : la partie
-    // reste jouable normalement mais n'est ni historisee ni classee
-    // (voir PartieService.proposerMot cote Service Partie).
-    const corps = joueurConnecte
-        ? { joueurId: joueurConnecte.id, longueur: longueurMot }
-        : { longueur: longueurMot };
+    const corps = { joueurId: joueurConnecte.id, longueur: longueurMot };
     try {
         const rep = await fetch(`${URL_PARTIE}/api/parties`, {
             method: "POST",
@@ -795,11 +768,11 @@ async function demarrerPartie() {
 
 function lancerInterfaceJeu() {
     afficherEcran("zone-jeu");
-    $("info-joueur").textContent = joueurConnecte ? "Joueur : " + joueurConnecte.pseudo : "";
+    $("info-joueur").textContent = "Joueur : " + joueurConnecte.pseudo;
     majInfosEssais();
 
-    // La 1re lettre est donnee (regle du jeu). Elle est affichee,
-    // verrouillee, en tete de CHAQUE ligne ; le joueur saisit le reste.
+    // La 1re lettre est donnee (regle du jeu). Elle est affichee en tete
+    // de CHAQUE ligne (mais reste modifiable) ; le joueur saisit le reste.
     premiereLettre = partieEnCours.premiereLettreMotMystere;
     statutsLettres = {};
     majAffichageClavier();
@@ -815,9 +788,10 @@ function lancerInterfaceJeu() {
  *  - les essais deja faits (partieEnCours.propositions) sont affiches
  *    en cases figees, colorees selon le resultat ;
  *  - la ligne suivante est la ligne "active" : des <input> individuels,
- *    un par lettre, avec les lettres deja trouvees BIEN_PLACEE
- *    pre-remplies et verrouillees (comme au vrai Motus, contrairement
- *    a Wordle ou chaque ligne repart de zero) ;
+ *    un par lettre. Chaque ligne repart de cases vides (aucune lettre
+ *    verte n'est reportee d'un essai a l'autre, contrairement au vrai
+ *    Motus) ; seule la 1re case affiche la lettre donnee au depart,
+ *    mais elle reste modifiable comme les autres (pas de case verrouillee) ;
  *  - les lignes restantes sont de simples cases vides.
  */
 function construireGrille() {
@@ -843,9 +817,12 @@ function construireGrille() {
                 ligne.appendChild(case_);
             }
         } else if (l === propositions.length && partieEnCours.statut === "EN_COURS") {
-            // Ligne active : la 1re case affiche la lettre donnee (verrouillee),
-            // les autres sont vides. Aucune lettre des essais precedents n'est
-            // reportee : chaque ligne repart de zero.
+            // Ligne active : la 1re case affiche la lettre donnee (juste a
+            // titre indicatif), les autres sont vides. Aucune lettre des
+            // essais precedents n'est reportee : chaque ligne repart de
+            // zero. Toutes les cases, y compris la 1re, restent librement
+            // saisissables : taper une lettre ecrase toujours le contenu
+            // courant et avance la case suivante (comportement Wordle).
             for (let c = 0; c < longueurMot; c++) {
                 const input = document.createElement("input");
                 input.type = "text";
@@ -856,10 +833,10 @@ function construireGrille() {
                 if (c === 0) {
                     input.value = premiereLettre;
                     input.classList.add("donnee");
-                    input.disabled = true;   // lettre donnee : non modifiable
-                } else {
-                    input.addEventListener("keydown", onKeydownCase);
                 }
+                input.addEventListener("keydown", onKeydownCase);
+                input.addEventListener("input", onSaisieLettre);
+                input.addEventListener("focus", () => input.select());
                 ligne.appendChild(input);
             }
         } else {
@@ -890,38 +867,50 @@ function focusCasePrecedente(pos) {
     if (precedente) precedente.focus();
 }
 
+/**
+ * Filet de securite pour les saisies qui ne passent pas par une touche
+ * lettre standard interceptee dans onKeydownCase (clavier virtuel mobile,
+ * IME, coller/paste...) : ne garde que la DERNIERE lettre tapee, pour que
+ * la case soit toujours ecrasee plutot que bloquee une fois pleine.
+ */
 function onSaisieLettre(e) {
     const input = e.target;
-    input.value = input.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
-    // Des qu'on modifie une case (meme pre-remplie), elle perd son
-    // repere visuel "confirme" tant qu'elle n'est pas re-validee.
+    const lettres = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+    input.value = lettres.slice(-1);
     input.classList.remove("bien");
     if (input.value) {
         focusCaseSuivante(parseInt(input.dataset.pos, 10));
     }
 }
 
+/**
+ * Gere toute la navigation clavier physique d'une case de saisie.
+ * Une lettre ecrase toujours la valeur courante (meme la case n'est pas
+ * vide, meme la lettre donnee) et fait avancer sur la case suivante : on
+ * n'attend pas le comportement natif de l'input (bloque par maxLength des
+ * qu'une case est deja remplie), on le prend en charge nous-memes.
+ */
 function onKeydownCase(e) {
     const pos = parseInt(e.target.dataset.pos, 10);
-    if (e.key === "Backspace" && !e.target.value) {
+    if (e.key === "Backspace") {
         e.preventDefault();
-        focusCasePrecedente(pos);
+        if (e.target.value) {
+            e.target.value = "";
+            e.target.classList.remove("bien");
+        } else {
+            focusCasePrecedente(pos);
+        }
     } else if (e.key === "ArrowRight") {
         focusCaseSuivante(pos);
     } else if (e.key === "ArrowLeft") {
         focusCasePrecedente(pos);
     } else if (e.key === "Enter") {
         validerProposition();
-    }
-}
-
-/** Met a jour lettresConnues avec les positions BIEN_PLACEE de cette proposition. */
-function mettreAJourLettresConnues(proposition) {
-    const statuts = proposition.resultat.split(",");
-    for (let c = 0; c < statuts.length; c++) {
-        if (statuts[c] === "BIEN_PLACEE") {
-            lettresConnues[c] = proposition.motPropose.charAt(c);
-        }
+    } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.target.value = e.key.toUpperCase();
+        e.target.classList.remove("bien");
+        focusCaseSuivante(pos);
     }
 }
 
@@ -1008,7 +997,6 @@ async function validerProposition() {
         }
         partieEnCours = await rep.json();
         const props   = partieEnCours.propositions;
-        mettreAJourLettresConnues(props[props.length - 1]);
         mettreAJourStatutsLettres(props[props.length - 1]);
         majAffichageClavier();
         majInfosEssais();
@@ -1040,7 +1028,19 @@ function terminerPartie(gagne) {
     } else {
         afficherMessageJeu(`Perdu ! Le mot était « ${partieEnCours.motMystere} ».`, "perdu");
     }
-    setTimeout(retourProfil, 3000);
+    setTimeout(afficherEcranProfil, 3000);
+}
+
+/**
+ * Abandonne la partie en cours : le Service Partie la marque PERDUE
+ * (jamais laissee EN_COURS), puis on revient au profil. Best-effort :
+ * meme si l'appel echoue, on quitte quand meme l'ecran de jeu.
+ */
+async function abandonnerPartie() {
+    try {
+        await fetch(`${URL_PARTIE}/api/parties/${partieEnCours.id}/abandon`, { method: "POST" });
+    } catch (e) { /* on quitte l'ecran de jeu malgre tout */ }
+    afficherEcranProfil();
 }
 
 // =====================================================================
@@ -1220,6 +1220,13 @@ function afficherEcran(id) {
     ["zone-auth", "zone-profil", "zone-config", "zone-jeu"].forEach(z => {
         $(z).style.display = z === id ? "block" : "none";
     });
+    // Le bouton "Jouer" est desactive pendant la duree d'une partie
+    // (voir demarrerPartie). Quel que soit le chemin emprunte pour revenir
+    // a l'accueil (deconnexion, abandon, retour direct...), il doit
+    // redevenir cliquable.
+    if (id === "zone-config") {
+        $("btn-demarrer").disabled = false;
+    }
 }
 function majInfosEssais() {
     $("info-essais").textContent =

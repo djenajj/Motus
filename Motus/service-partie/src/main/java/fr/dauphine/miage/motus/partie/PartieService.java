@@ -41,21 +41,63 @@ public class PartieService {
      * Cree une nouvelle partie pour un joueur.
      *
      * Etapes :
-     *  1. demander un mot mystere au Service Dico (appel REST) ;
-     *  2. creer la partie EN_COURS et l'enregistrer en base.
+     *  1. verifier qu'un compte joueur est fourni et que ce n'est pas
+     *     un compte administrateur (appel REST au Service Joueur) ;
+     *  2. demander un mot mystere au Service Dico (appel REST) ;
+     *  3. creer la partie EN_COURS et l'enregistrer en base.
      *
-     * @param joueurId identifiant du joueur
+     * @param joueurId identifiant du joueur (obligatoire : il faut un
+     *                 compte pour jouer)
      * @param longueur longueur du mot souhaitee
      * @return la partie creee
+     * @throws CoupInvalideException si aucun joueurId n'est fourni
+     * @throws AccesRefuseException  si le joueur a le role ADMIN
      */
     @Transactional
     public Partie creerPartie(Long joueurId, int longueur) {
-        // 1. Appel REST au Service Dico pour tirer le mot mystere.
+        if (joueurId == null) {
+            throw new CoupInvalideException(
+                    "Un compte est necessaire pour jouer une partie.");
+        }
+        if (joueurClient.estAdmin(joueurId)) {
+            throw new AccesRefuseException(
+                    "Un compte administrateur ne peut pas jouer de partie.");
+        }
+
+        // 2. Appel REST au Service Dico pour tirer le mot mystere.
         String motMystere = dicoClient.tirerMotMystere(longueur);
 
-        // 2. Creation et persistance de la partie.
+        // 3. Creation et persistance de la partie.
         Partie partie = new Partie(joueurId, motMystere, NB_ESSAIS_PAR_DEFAUT);
         return partieRepository.save(partie);
+    }
+
+    /**
+     * Abandonne une partie en cours.
+     *
+     * Regle choisie pour le projet : abandonner equivaut a perdre (le
+     * statut passe a PERDUE, jamais laisse EN_COURS), et le resultat
+     * est envoye au Service Joueur comme une defaite.
+     *
+     * @throws CoupInvalideException si la partie est deja terminee
+     */
+    @Transactional
+    public Partie abandonnerPartie(Long partieId) {
+        Partie partie = trouverPartie(partieId);
+        if (partie.getStatut() != StatutPartie.EN_COURS) {
+            throw new CoupInvalideException(
+                    "La partie est deja terminee (statut : " + partie.getStatut() + ").");
+        }
+
+        partie.setStatut(StatutPartie.PERDUE);
+        partie.setDateFin(LocalDateTime.now());
+        partieRepository.save(partie);
+
+        if (partie.getJoueurId() != null) {
+            joueurClient.envoyerResultat(
+                    partie.getJoueurId(), partie.getId(), false, partie.getNbEssaisUtilises());
+        }
+        return partie;
     }
 
     /**
@@ -133,9 +175,8 @@ public class PartieService {
         // Persistance (cascade ALL enregistre aussi la proposition).
         partieRepository.save(partie);
 
-        // 7. Si la partie est terminee ET qu'elle est liee a un joueur,
-        //    on previent le Service Joueur (mode "jouer sans compte" :
-        //    joueurId == null, aucun historique/classement).
+        // 7. Si la partie est terminee, on previent le Service Joueur pour
+        //    qu'il historise le resultat et mette a jour le score.
         if (partie.getStatut() != StatutPartie.EN_COURS && partie.getJoueurId() != null) {
             joueurClient.envoyerResultat(
                     partie.getJoueurId(),
