@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn --version)",
+      "Bash(JAVA_HOME=/Users/jules/Library/Java/JavaVirtualMachines/openjdk-24/Contents/Home mvn -f /Users/jules/Downloads/service-joueur/pom.xml spring-boot:run)"
+    ]
+  }
+}

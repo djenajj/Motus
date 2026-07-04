@@ -1,0 +1,22 @@
+# Fichiers compiles et build Maven
+target/
+*.class
+
+# Fichiers IntelliJ IDEA
+.idea/
+*.iml
+
+# Fichiers Eclipse
+.classpath
+.project
+.settings/
+
+# Fichiers VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Fichiers systeme
+.DS_Store
+Thumbs.db

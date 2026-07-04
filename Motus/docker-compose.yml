@@ -1,0 +1,103 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: motus-postgres
+    environment:
+      POSTGRES_USER: motus
+      POSTGRES_PASSWORD: motus
+      POSTGRES_DB: motus
+    ports:
+      - "5432:5432"
+    volumes:
+      # Volume nomme : les donnees Postgres survivent a un
+      # "docker compose down" (seul "down -v" les supprimerait).
+      - postgres-data:/var/lib/postgresql/data
+      # Script execute une seule fois, au tout premier demarrage
+      # (volume vide) : cree les 3 bases separees.
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U motus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  service-dico:
+    build: ./service-dico
+    container_name: motus-service-dico
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/dicodb
+      SPRING_DATASOURCE_USERNAME: motus
+      SPRING_DATASOURCE_PASSWORD: motus
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  service-joueur:
+    build: ./service-joueur
+    container_name: motus-service-joueur
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/joueurdb
+      SPRING_DATASOURCE_USERNAME: motus
+      SPRING_DATASOURCE_PASSWORD: motus
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  service-partie:
+    build: ./service-partie
+    container_name: motus-service-partie
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/partiedb
+      SPRING_DATASOURCE_USERNAME: motus
+      SPRING_DATASOURCE_PASSWORD: motus
+      # A l'interieur du reseau Docker Compose, chaque service est
+      # joignable par son NOM (resolution DNS automatique), pas par
+      # "localhost". On surcharge donc les valeurs par defaut de
+      # application.properties (qui pointent vers localhost, pour
+      # une execution locale hors Docker).
+      SERVICES_DICO_URL: http://service-dico:8083
+      SERVICES_JOUEUR_URL: http://service-joueur:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      service-dico:
+        condition: service_started
+      service-joueur:
+        condition: service_started
+
+  service-gateway:
+    build: ./service-gateway
+    container_name: motus-service-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Dans le reseau Docker, on vise les services par leur NOM de
+      # conteneur (et non localhost). On surcharge donc les valeurs par
+      # defaut de application.yml.
+      SERVICES_JOUEUR_URL: http://service-joueur:8081
+      SERVICES_PARTIE_URL: http://service-partie:8082
+      SERVICES_DICO_URL: http://service-dico:8083
+    depends_on:
+      - service-dico
+      - service-joueur
+      - service-partie
+
+  client-web:
+    image: nginx:alpine
+    container_name: motus-client-web
+    ports:
+      - "8090:80"
+    volumes:
+      - ./client-web:/usr/share/nginx/html:ro
+    depends_on:
+      - service-gateway
+
+volumes:
+  postgres-data:

@@ -1,0 +1,54 @@
+# ===================================================================
+# Manifeste Kubernetes du Service Partie
+# Deploie le microservice sur un cluster MiniKube.
+#
+# Particularite : ce service appelle les Services Dico et Joueur.
+# On lui donne leurs adresses via des variables d'environnement.
+# Dans Kubernetes, on peut joindre un service par son nom : Kubernetes
+# fournit une resolution DNS interne (service-dico, service-joueur).
+# ===================================================================
+
+# ---- Deployment ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-partie
+  labels:
+    app: service-partie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-partie
+  template:
+    metadata:
+      labels:
+        app: service-partie
+    spec:
+      containers:
+        - name: service-partie
+          image: service-partie:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            # Adresses des autres microservices dans le cluster.
+            - name: SERVICES_DICO_URL
+              value: "http://service-dico:8083"
+            - name: SERVICES_JOUEUR_URL
+              value: "http://service-joueur:8081"
+
+---
+# ---- Service ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-partie
+spec:
+  type: NodePort
+  selector:
+    app: service-partie
+  ports:
+    - port: 8082
+      targetPort: 8082
+      nodePort: 30082

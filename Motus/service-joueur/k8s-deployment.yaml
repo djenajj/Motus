@@ -1,0 +1,43 @@
+# ===================================================================
+# Manifeste Kubernetes du Service Joueur
+# Deploie le microservice sur un cluster MiniKube.
+# ===================================================================
+
+# ---- Deployment ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-joueur
+  labels:
+    app: service-joueur
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-joueur
+  template:
+    metadata:
+      labels:
+        app: service-joueur
+    spec:
+      containers:
+        - name: service-joueur
+          image: service-joueur:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8081
+
+---
+# ---- Service ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-joueur
+spec:
+  type: NodePort
+  selector:
+    app: service-joueur
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30081

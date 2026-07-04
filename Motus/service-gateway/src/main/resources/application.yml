@@ -1,0 +1,53 @@
+# ===================================================================
+# Configuration de l'API Gateway (Spring Cloud Gateway)
+# ===================================================================
+# Le gateway est le POINT D'ENTREE UNIQUE de l'application cote client :
+# le front n'appelle plus les trois microservices directement, il ne
+# connait que cette adresse (http://localhost:8080). Le gateway route
+# ensuite chaque requete vers le bon service en fonction du chemin.
+#
+# En local : les URI pointent vers localhost:<port>.
+# En Docker : on surcharge SERVICES_*_URL (voir docker-compose.yml)
+# pour viser les services par leur nom de conteneur.
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: service-gateway
+  cloud:
+    gateway:
+      # Evite les en-tetes CORS en double : le gateway ajoute les siens,
+      # on supprime donc ceux eventuellement renvoyes par les services.
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      # CORS gere une seule fois, ici, pour tout le monde : le client web
+      # (servi par nginx sur un autre port) peut ainsi appeler l'API.
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      # Table de routage : un chemin -> un microservice.
+      routes:
+        - id: service-joueur
+          uri: ${SERVICES_JOUEUR_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/joueurs/**
+
+        - id: service-partie
+          uri: ${SERVICES_PARTIE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/parties/**
+
+        - id: service-dico
+          uri: ${SERVICES_DICO_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/mots/**

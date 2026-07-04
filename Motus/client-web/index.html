@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motus — Jeu de mots</title>
+<style>
+    :root {
+        --fond-page: #eef1fb;
+        --fond-carte: #ffffff;
+        --texte: #1c2340;
+        --texte-att: #5b6584;
+        --rouge: #e63946;
+        --jaune: #ffc93c;
+        --vert: #27ae60;
+        --orange: #f0932b;
+        --bleu-vif: #3d5af1;
+        --blanc: #ffffff;
+        --bordure: #dde2f2;
+        --case-vide: #eef1f8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+        background: linear-gradient(180deg, #f7f9ff, var(--fond-page));
+        color: var(--texte);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h1 {
+        font-size: clamp(2.5rem, 8vw, 4.5rem);
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--texte);
+        text-shadow: 3px 3px 0 var(--jaune), 6px 6px 0 var(--rouge);
+        margin-bottom: 4px;
+    }
+
+    .sous-titre {
+        font-size: 0.9rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--texte-att);
+        margin-bottom: 28px;
+    }
+
+    .panneau {
+        background: var(--fond-carte);
+        border: 1px solid var(--bordure);
+        border-radius: 14px;
+        padding: 24px;
+        width: 100%;
+        max-width: 560px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 28px rgba(28, 35, 64, 0.08);
+    }
+
+    /* ----- Tabs auth ----- */
+    .tabs {
+        display: flex;
+        border-bottom: 2px solid var(--bordure);
+        margin-bottom: 24px;
+    }
+    .tab {
+        flex: 1;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        color: var(--texte-att);
+        font-size: 0.95rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 10px 0;
+        cursor: pointer;
+        border-radius: 0;
+        transition: color 0.2s, border-color 0.2s;
+    }
+    .tab.actif { border-bottom-color: var(--rouge); color: var(--rouge); }
+
+    /* ----- Champs de formulaire ----- */
+    .champ { margin-bottom: 14px; }
+    .champ label {
+        display: block;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--texte-att);
+        margin-bottom: 6px;
+    }
+    .champ input {
+        width: 100%;
+        padding: 11px 14px;
+        background: var(--fond-page);
+        border: 2px solid var(--bordure);
+        border-radius: 8px;
+        color: var(--texte);
+        font-family: inherit;
+        font-size: 1rem;
+    }
+    .champ input:focus { outline: none; border-color: var(--bleu-vif); background: var(--blanc); }
+
+    /* ----- Boutons ----- */
+    button { font-family: inherit; font-size: 1rem; border-radius: 8px; cursor: pointer; }
+
+    .btn-principal {
+        width: 100%;
+        background: var(--rouge);
+        border: 2px solid var(--rouge);
+        color: var(--blanc);
+        font-weight: 900;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 14px;
+        margin-top: 8px;
+        transition: filter 0.1s, transform 0.1s;
+    }
+    .btn-principal:hover { filter: brightness(1.08); }
+    .btn-principal:active { transform: scale(0.98); }
+    .btn-principal:disabled { background: #c6cad6; border-color: #c6cad6; cursor: not-allowed; filter: none; }
+
+    .btn-secondaire {
+        width: 100%;
+        background: transparent;
+        border: 2px solid var(--bordure);
+        color: var(--texte-att);
+        padding: 11px;
+        margin-top: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: bold;
+    }
+    .btn-secondaire:hover { color: var(--texte); border-color: var(--texte-att); }
+
+    /* ----- Messages inline ----- */
+    .msg-inline {
+        font-size: 0.9rem;
+        font-weight: bold;
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-top: 12px;
+        display: none;
+    }
+    .msg-inline.erreur { display: block; background: #fde7e8; color: #b3202d; }
+    .msg-inline.ok     { display: block; background: #fff3d6; color: #8a6300; }
+
+    /* ----- Profil ----- */
+    .profil-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .profil-pseudo { font-size: 1.35rem; font-weight: 900; color: var(--texte); }
+    .btn-deconnexion {
+        background: transparent;
+        border: 1px solid var(--bordure);
+        color: var(--texte-att);
+        font-size: 0.78rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .btn-deconnexion:hover { border-color: var(--texte-att); color: var(--texte); }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .stat-card {
+        background: var(--fond-page);
+        border: 1px solid var(--bordure);
+        border-radius: 10px;
+        padding: 14px 8px;
+        text-align: center;
+    }
+    .stat-val { font-size: 1.9rem; font-weight: 900; color: var(--bleu-vif); line-height: 1; margin-bottom: 5px; }
+    .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--texte-att); }
+
+    /* ----- Historique ----- */
+    .titre-section {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--texte-att);
+        margin: 22px 0 12px;
+    }
+    .historique table { width: 100%; border-collapse: collapse; }
+    .historique th, .historique td {
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--bordure);
+        font-size: 0.87rem;
+    }
+    .historique th { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--texte-att); }
+    .badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 12px;
+        font-size: 0.74rem;
+        font-weight: bold;
+    }
+    .badge.gagne { background: var(--vert); color: #fff; }
+    .badge.perdu { background: var(--rouge); color: #fff; }
+    .vide { color: var(--texte-att); font-style: italic; text-align: center; padding: 16px; }
+
+    /* ----- Config partie ----- */
+    .config-ligne {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+    .config-ligne label {
+        flex: 0 0 130px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+    }
+    select {
+        flex: 1;
+        font-family: inherit;
+        font-size: 1rem;
+        border-radius: 8px;
+        border: 2px solid var(--bordure);
+        padding: 10px 14px;
+        background: var(--fond-page);
+        color: var(--texte);
+    }
+
+    /* ----- Grille de jeu (façon Motus/Wordle) ----- */
+    /* vert = bien placee, jaune = mal placee, gris fonce = absente */
+    .grille { display: grid; gap: 8px; justify-content: center; margin: 0 auto 20px; }
+    .ligne { display: grid; gap: 8px; justify-content: center; }
+    .case, .case-saisie {
+        width: 56px; height: 56px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; font-weight: 900; text-transform: uppercase;
+        background: var(--case-vide); border: 2px solid var(--bordure);
+        border-radius: 6px; color: var(--texte);
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .case.bien, .case-saisie.bien   { background: var(--vert);  border-color: var(--vert);  color: #fff; }
+    .case.mal,  .case-saisie.mal    { background: var(--jaune); border-color: var(--jaune); color: var(--texte); }
+    .case.absente, .case-saisie.absente {
+        background: #4a5169; border-color: #4a5169; color: #fff;
+    }
+
+    /* Cases de la ligne active : ce sont de vrais <input>, une lettre chacune */
+    .case-saisie {
+        text-align: center; padding: 0; font-family: inherit;
+        border-color: var(--bleu-vif); background: var(--blanc);
+        caret-color: var(--bleu-vif);
+    }
+    .case-saisie:focus { outline: none; border-color: var(--bleu-vif); box-shadow: 0 0 0 3px rgba(61,90,241,0.2); }
+    .case-saisie:disabled { opacity: 0.6; }
+    /* 1re case : lettre donnee au depart (verrouillee, non saisissable) */
+    .case-saisie.donnee {
+        background: var(--vert); border-color: var(--vert);
+        color: #fff; opacity: 1; cursor: default;
+    }
+
+    /* ----- Saisie ----- */
+    .saisie-ligne { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .btn-valider {
+        background: var(--jaune); border: 2px solid var(--jaune);
+        color: var(--texte); font-weight: 900; text-transform: uppercase; padding: 10px 22px;
+    }
+    .btn-valider:disabled { background: #e2e5ee; border-color: #e2e5ee; color: #9aa0b4; }
+
+    .infos-partie { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--texte-att); margin-bottom: 16px; }
+
+    /* ----- Clavier virtuel AZERTY ----- */
+    .clavier { display: flex; flex-direction: column; gap: 8px; margin: 20px 0 16px; }
+    .rangee-clavier { display: flex; justify-content: center; gap: 6px; }
+    .touche-clavier {
+        min-width: 34px; height: 46px; padding: 0 6px;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--case-vide); border: none; border-radius: 6px;
+        font-weight: 700; font-size: 0.95rem; color: var(--texte);
+        transition: background 0.2s, color 0.2s;
+    }
+    .touche-clavier:hover { filter: brightness(0.96); }
+    .touche-clavier.touche-large { min-width: 56px; font-size: 0.72rem; text-transform: uppercase; }
+    .touche-clavier.bien     { background: var(--vert);  color: #fff; }
+    .touche-clavier.mal      { background: var(--jaune); color: var(--texte); }
+    .touche-clavier.absente  { background: #4a5169; color: #fff; }
+
+    .message {
+        text-align: center; font-size: 1.1rem; font-weight: bold;
+        min-height: 28px; margin-bottom: 12px; padding: 10px; border-radius: 8px;
+    }
+    .message.info  { color: var(--bleu-vif); background: #eef1ff; }
+    .message.erreur { color: #b3202d; background: #fde7e8; }
+    .message.gagne { color: #1a6b3c; background: #dff5e6; font-size: 1.3rem; }
+    .message.perdu { color: #b3202d; background: #fde7e8; font-size: 1.2rem; }
+
+    /* ----- Classement ----- */
+    .classement table { width: 100%; border-collapse: collapse; }
+    .classement th, .classement td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--bordure); }
+    .classement th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.08em; color: var(--texte-att); }
+    .classement tr:first-child td { font-weight: 900; color: var(--bleu-vif); }
+
+    /* ----- Admin ----- */
+    .filtre-ligne {
+        display: flex; gap: 10px; flex-wrap: wrap;
+        margin-bottom: 10px; align-items: flex-end;
+    }
+    .filtre-groupe { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 110px; }
+    .filtre-groupe label {
+        font-size: 0.7rem; text-transform: uppercase;
+        letter-spacing: 0.08em; color: var(--texte-att);
+    }
+    .filtre-groupe input[type="date"] {
+        font-family: inherit; font-size: 0.9rem; border-radius: 8px;
+        border: 2px solid var(--bordure); padding: 8px 10px;
+        background: var(--fond-page); color: var(--texte);
+    }
+    .filtre-boutons { display: flex; gap: 8px; padding-top: 18px; }
+    .btn-rechercher {
+        background: var(--rouge); border: 2px solid var(--rouge);
+        color: var(--blanc); font-weight: bold; text-transform: uppercase;
+        font-size: 0.85rem; letter-spacing: 0.05em;
+        padding: 8px 18px; border-radius: 8px; cursor: pointer;
+    }
+    .btn-rechercher:hover { filter: brightness(1.08); }
+    .btn-reset {
+        background: transparent; border: 2px solid var(--bordure);
+        color: var(--texte-att); font-size: 0.85rem;
+        padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    }
+    .btn-reset:hover { color: var(--texte); border-color: var(--texte-att); }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td {
+        padding: 7px 8px; text-align: left;
+        border-bottom: 1px solid var(--bordure); font-size: 0.82rem;
+    }
+    .admin-table th {
+        text-transform: uppercase; font-size: 0.68rem;
+        letter-spacing: 0.08em; color: var(--texte-att);
+    }
+    .admin-info { font-size: 0.82rem; color: var(--texte-att); margin-bottom: 10px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>Motus</h1>
+<div class="sous-titre">Trouvez le mot mystère</div>
+
+<!-- ===================== ÉCRAN AUTH ===================== -->
+<div class="panneau" id="zone-auth" style="display:none">
+    <div class="tabs">
+        <button class="tab actif" id="tab-connexion" onclick="afficherTab('connexion')">Se connecter</button>
+        <button class="tab" id="tab-inscription" onclick="afficherTab('inscription')">Créer un compte</button>
+    </div>
+
+    <div id="form-connexion">
+        <div class="champ">
+            <label for="login-pseudo">Pseudo</label>
+            <input type="text" id="login-pseudo" autocomplete="username">
+        </div>
+        <div class="champ">
+            <label for="login-mdp">Mot de passe</label>
+            <input type="password" id="login-mdp" autocomplete="current-password">
+        </div>
+        <button class="btn-principal" onclick="connecter()">Se connecter</button>
+        <div class="msg-inline" id="msg-connexion"></div>
+    </div>
+
+    <div id="form-inscription" style="display:none">
+        <div class="champ">
+            <label for="inscr-pseudo">Pseudo</label>
+            <input type="text" id="inscr-pseudo" autocomplete="username">
+        </div>
+        <div class="champ">
+            <label for="inscr-mdp">Mot de passe</label>
+            <input type="password" id="inscr-mdp" autocomplete="new-password">
+        </div>
+        <button class="btn-principal" onclick="sInscrire()">Créer mon compte</button>
+        <div class="msg-inline" id="msg-inscription"></div>
+    </div>
+
+    <button class="btn-secondaire" onclick="afficherEcran('zone-config')">&larr; Retour (jouer sans compte)</button>
+</div>
+
+<!-- ===================== ÉCRAN PROFIL ===================== -->
+<div class="panneau" id="zone-profil" style="display:none">
+    <div class="profil-header">
+        <div class="profil-pseudo" id="profil-pseudo"></div>
+        <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-val" id="stat-parties">0</div>
+            <div class="stat-label">Parties jouées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="stat-victoires">0</div>
+            <div class="stat-label">Victoires</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="stat-score">0</div>
+            <div class="stat-label">Score total</div>
+        </div>
+    </div>
+
+    <button class="btn-principal" onclick="allerConfigPartie()">▶ Jouer</button>
+
+    <div id="zone-historique">
+        <div class="titre-section">Mes dernières parties</div>
+        <div class="historique">
+            <table>
+                <thead><tr><th>Date</th><th>Résultat</th><th>Essais</th><th>Score</th></tr></thead>
+                <tbody id="corps-historique"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== ÉCRAN CONFIG / ACCUEIL ===================== -->
+<!-- Ecran par defaut au chargement : jouer est possible immediatement, -->
+<!-- sans compte (le score ne sera alors ni historise ni classe). -->
+<div class="panneau" id="zone-config">
+    <div class="config-ligne">
+        <label for="select-longueur">Longueur du mot</label>
+        <select id="select-longueur">
+            <option value="5">5 lettres</option>
+            <option value="6" selected>6 lettres</option>
+            <option value="7">7 lettres</option>
+            <option value="8">8 lettres</option>
+        </select>
+    </div>
+    <button class="btn-principal" id="btn-demarrer" onclick="demarrerPartie()">▶ Jouer</button>
+    <button class="btn-secondaire" id="btn-config-retour-profil" onclick="retourProfil()" style="display:none">Retour au profil</button>
+    <button class="btn-secondaire" id="btn-config-connexion" onclick="afficherEcran('zone-auth')">Se connecter pour sauvegarder mes scores</button>
+    <div class="msg-inline" id="msg-config"></div>
+</div>
+
+<!-- ===================== ÉCRAN JEU ===================== -->
+<div class="panneau" id="zone-jeu" style="display:none">
+    <div class="infos-partie">
+        <span id="info-joueur"></span>
+        <span id="info-essais"></span>
+    </div>
+    <div class="message info" id="msg-jeu"></div>
+    <div class="grille" id="grille"></div>
+    <div class="saisie-ligne">
+        <button class="btn-valider" id="btn-valider" onclick="validerProposition()">Valider</button>
+    </div>
+
+    <!-- Clavier virtuel AZERTY : les touches se colorent au fil des -->
+    <!-- essais (vert/jaune/gris), comme dans Wordle. -->
+    <div class="clavier" id="clavier">
+        <div class="rangee-clavier">
+            <button class="touche-clavier" data-lettre="A" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('A')">A</button>
+            <button class="touche-clavier" data-lettre="Z" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('Z')">Z</button>
+            <button class="touche-clavier" data-lettre="E" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('E')">E</button>
+            <button class="touche-clavier" data-lettre="R" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('R')">R</button>
+            <button class="touche-clavier" data-lettre="T" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('T')">T</button>
+            <button class="touche-clavier" data-lettre="Y" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('Y')">Y</button>
+            <button class="touche-clavier" data-lettre="U" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('U')">U</button>
+            <button class="touche-clavier" data-lettre="I" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('I')">I</button>
+            <button class="touche-clavier" data-lettre="O" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('O')">O</button>
+            <button class="touche-clavier" data-lettre="P" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('P')">P</button>
+        </div>
+        <div class="rangee-clavier">
+            <button class="touche-clavier" data-lettre="Q" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('Q')">Q</button>
+            <button class="touche-clavier" data-lettre="S" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('S')">S</button>
+            <button class="touche-clavier" data-lettre="D" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('D')">D</button>
+            <button class="touche-clavier" data-lettre="F" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('F')">F</button>
+            <button class="touche-clavier" data-lettre="G" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('G')">G</button>
+            <button class="touche-clavier" data-lettre="H" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('H')">H</button>
+            <button class="touche-clavier" data-lettre="J" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('J')">J</button>
+            <button class="touche-clavier" data-lettre="K" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('K')">K</button>
+            <button class="touche-clavier" data-lettre="L" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('L')">L</button>
+            <button class="touche-clavier" data-lettre="M" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('M')">M</button>
+        </div>
+        <div class="rangee-clavier">
+            <button class="touche-clavier touche-large" onmousedown="event.preventDefault()" onclick="validerProposition()">Entrée</button>
+            <button class="touche-clavier" data-lettre="W" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('W')">W</button>
+            <button class="touche-clavier" data-lettre="X" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('X')">X</button>
+            <button class="touche-clavier" data-lettre="C" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('C')">C</button>
+            <button class="touche-clavier" data-lettre="V" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('V')">V</button>
+            <button class="touche-clavier" data-lettre="B" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('B')">B</button>
+            <button class="touche-clavier" data-lettre="N" onmousedown="event.preventDefault()" onclick="cliquerToucheClavier('N')">N</button>
+            <button class="touche-clavier touche-large" onmousedown="event.preventDefault()" onclick="cliquerEffacer()">⌫</button>
+        </div>
+    </div>
+
+    <button class="btn-secondaire" onclick="retourProfil()">Abandonner</button>
+</div>
+
+<!-- ===================== CLASSEMENT ===================== -->
+<div class="panneau classement" id="zone-classement">
+    <div class="titre-section" style="margin-top:0">Classement</div>
+    <table>
+        <thead><tr><th>#</th><th>Joueur</th><th>Score</th><th>Parties</th><th>Victoires</th></tr></thead>
+        <tbody id="corps-classement"><tr><td colspan="3">Chargement…</td></tr></tbody>
+    </table>
+</div>
+
+<!-- ===================== ADMINISTRATION ===================== -->
+<!-- Reserve aux joueurs avec le role ADMIN : masque par defaut, -->
+<!-- affiche par afficherEcranProfil() apres une connexion admin. -->
+<div class="panneau" id="zone-admin" style="display:none">
+    <div class="titre-section" style="margin-top:0">Administration des parties</div>
+    <div class="filtre-ligne">
+        <div class="filtre-groupe">
+            <label>Joueur</label>
+            <select id="admin-joueur">
+                <option value="">Tous les joueurs</option>
+            </select>
+        </div>
+        <div class="filtre-groupe">
+            <label>Statut</label>
+            <select id="admin-statut">
+                <option value="">Tous</option>
+                <option value="EN_COURS">En cours</option>
+                <option value="GAGNEE">Gagnée</option>
+                <option value="PERDUE">Perdue</option>
+            </select>
+        </div>
+        <div class="filtre-groupe">
+            <label>Du</label>
+            <input type="date" id="admin-date-debut">
+        </div>
+        <div class="filtre-groupe">
+            <label>Au</label>
+            <input type="date" id="admin-date-fin">
+        </div>
+        <div class="filtre-groupe">
+            <label>Classement</label>
+            <select id="admin-tri" onchange="afficherResultatsAdmin(dernieresPartiesAdmin)">
+                <option value="date">Date (récent d'abord)</option>
+                <option value="essais">Essais (meilleures perfs d'abord)</option>
+            </select>
+        </div>
+        <div class="filtre-boutons">
+            <button class="btn-rechercher" onclick="rechercherParties()">Rechercher</button>
+            <button class="btn-reset" onclick="reinitialiserAdmin()">Réinitialiser</button>
+        </div>
+    </div>
+    <div class="admin-info" id="admin-info">Chargement des parties…</div>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>#</th><th>Joueur</th><th>Mot</th><th>Long.</th>
+                <th>Statut</th><th>Essais</th><th>Date début</th><th>Date fin</th>
+            </tr>
+        </thead>
+        <tbody id="admin-corps"></tbody>
+    </table>
+
+    <div class="titre-section">Ajouter un mot au dictionnaire</div>
+    <div class="filtre-ligne">
+        <div class="filtre-groupe">
+            <label for="admin-nouveau-mot">Nouveau mot (français)</label>
+            <input type="text" id="admin-nouveau-mot" placeholder="ex. ORANGE" autocomplete="off">
+        </div>
+        <div class="filtre-boutons">
+            <button class="btn-rechercher" onclick="ajouterMotDictionnaire()">Ajouter</button>
+        </div>
+    </div>
+    <div class="msg-inline" id="msg-admin-mot"></div>
+</div>
+
+<script>
+// Point d'entree unique : l'API Gateway (Spring Cloud Gateway, port 8080).
+// Le front ne connait plus qu'une seule adresse ; le gateway route ensuite
+// /api/joueurs, /api/parties et /api/mots vers les trois microservices.
+const API_GATEWAY = "http://localhost:8080";
+const URL_JOUEUR = API_GATEWAY;
+const URL_PARTIE = API_GATEWAY;
+const URL_DICO   = API_GATEWAY;
+
+let joueurConnecte = null;
+let partieEnCours  = null;
+let longueurMot    = 6;
+let ligneCourante  = 0;
+let joueursList    = [];
+// Derniere liste de parties recue de l'API (vue admin), conservee
+// pour pouvoir retrier localement (Date / Essais) sans refaire d'appel.
+let dernieresPartiesAdmin = [];
+// Premiere lettre du mot (donnee au depart) : affichee verrouillee en tete
+// de chaque ligne active. Aucune autre lettre n'est reportee d'une ligne a
+// l'autre (chaque essai repart de cases vides).
+let premiereLettre = "";
+// Meilleur statut observe pour chaque lettre a travers tous les
+// essais de la partie en cours (ex : { A: "bien", Z: "absente" }).
+// Alimente les couleurs du clavier virtuel.
+let statutsLettres = {};
+
+const $ = (id) => document.getElementById(id);
+
+window.addEventListener("DOMContentLoaded", () => {
+    chargerClassement();
+    // Ecran d'accueil par defaut : zone-config (jouer immediatement,
+    // sans compte). La zone admin reste masquee tant qu'aucun compte
+    // ADMIN n'est connecte (voir afficherEcranProfil).
+    majBoutonsConfig();
+    $("login-mdp").addEventListener("keydown",  e => { if (e.key === "Enter") connecter(); });
+    $("inscr-mdp").addEventListener("keydown",  e => { if (e.key === "Enter") sInscrire(); });
+});
+
+// =====================================================================
+// AUTH
+// =====================================================================
+function afficherTab(tab) {
+    $("form-connexion").style.display  = tab === "connexion"  ? "block" : "none";
+    $("form-inscription").style.display = tab === "inscription" ? "block" : "none";
+    $("tab-connexion").classList.toggle("actif",  tab === "connexion");
+    $("tab-inscription").classList.toggle("actif", tab === "inscription");
+    resetMsg("msg-connexion");
+    resetMsg("msg-inscription");
+}
+
+async function connecter() {
+    const pseudo     = $("login-pseudo").value.trim();
+    const motDePasse = $("login-mdp").value;
+    if (!pseudo || !motDePasse) { setMsg("msg-connexion", "Veuillez remplir tous les champs.", "erreur"); return; }
+    try {
+        const rep = await fetch(`${URL_JOUEUR}/api/joueurs/connexion`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pseudo, motDePasse })
+        });
+        if (!rep.ok) {
+            const err = await rep.json();
+            setMsg("msg-connexion", err.message || "Pseudo ou mot de passe incorrect.", "erreur");
+            return;
+        }
+        joueurConnecte = await rep.json();
+        afficherEcranProfil();
+    } catch (e) {
+        setMsg("msg-connexion", "Service joueur inaccessible (port 8081).", "erreur");
+    }
+}
+
+async function sInscrire() {
+    const pseudo     = $("inscr-pseudo").value.trim();
+    const motDePasse = $("inscr-mdp").value;
+    if (!pseudo || !motDePasse) { setMsg("msg-inscription", "Veuillez remplir tous les champs.", "erreur"); return; }
+    try {
+        const rep = await fetch(`${URL_JOUEUR}/api/joueurs`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pseudo, motDePasse })
+        });
+        if (!rep.ok) {
+            const err = await rep.json();
+            setMsg("msg-inscription", err.message || "Impossible de créer le compte.", "erreur");
+            return;
+        }
+        joueurConnecte = await rep.json();
+        afficherEcranProfil();
+    } catch (e) {
+        setMsg("msg-inscription", "Service joueur inaccessible (port 8081).", "erreur");
+    }
+}
+
+function seDeconnecter() {
+    joueurConnecte = null;
+    partieEnCours  = null;
+    $("login-pseudo").value = "";
+    $("login-mdp").value    = "";
+    $("zone-admin").style.display = "none";
+    afficherEcran("zone-config");
+    chargerClassement();
+}
+
+// =====================================================================
+// PROFIL
+// =====================================================================
+async function afficherEcranProfil() {
+    try {
+        const rep = await fetch(`${URL_JOUEUR}/api/joueurs/${joueurConnecte.id}`);
+        if (rep.ok) joueurConnecte = await rep.json();
+    } catch (e) { /* garde les données en mémoire */ }
+
+    $("profil-pseudo").textContent = "Bonjour, " + joueurConnecte.pseudo + " !";
+
+    const resultats  = joueurConnecte.resultats || [];
+    const victoires  = resultats.filter(r => r.gagnee).length;
+    $("stat-parties").textContent   = resultats.length;
+    $("stat-victoires").textContent = victoires;
+    $("stat-score").textContent     = joueurConnecte.scoreTotal;
+
+    const corps = $("corps-historique");
+    corps.innerHTML = "";
+    if (resultats.length === 0) {
+        corps.innerHTML = `<tr><td colspan="4" class="vide">Aucune partie jouée pour l'instant.</td></tr>`;
+    } else {
+        [...resultats]
+            .sort((a, b) => new Date(b.datePartie) - new Date(a.datePartie))
+            .slice(0, 10)
+            .forEach(r => {
+                const date  = new Date(r.datePartie).toLocaleDateString("fr-FR",
+                    { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+                const badge = r.gagnee
+                    ? '<span class="badge gagne">Victoire</span>'
+                    : '<span class="badge perdu">Défaite</span>';
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${date}</td><td>${badge}</td><td>${r.nbEssais}</td><td>${r.score} pts</td>`;
+                corps.appendChild(tr);
+            });
+    }
+
+    // La zone d'administration n'est visible que pour le role ADMIN.
+    if (joueurConnecte.role === "ADMIN") {
+        $("zone-admin").style.display = "block";
+        chargerAdmin();
+    } else {
+        $("zone-admin").style.display = "none";
+    }
+
+    majBoutonsConfig();
+    afficherEcran("zone-profil");
+    chargerClassement();
+}
+
+/**
+ * Bascule l'affichage des boutons secondaires de l'ecran d'accueil
+ * (zone-config) selon qu'un compte est connecte ou non : un joueur
+ * connecte peut retourner a son profil, un visiteur anonyme se voit
+ * proposer de se connecter (pour que ses scores soient sauvegardes).
+ */
+function majBoutonsConfig() {
+    $("btn-config-retour-profil").style.display = joueurConnecte ? "block" : "none";
+    $("btn-config-connexion").style.display      = joueurConnecte ? "none"  : "block";
+}
+
+function allerConfigPartie() {
+    resetMsg("msg-config");
+    $("btn-demarrer").disabled = false;
+    majBoutonsConfig();
+    afficherEcran("zone-config");
+}
+
+function retourProfil() {
+    if (joueurConnecte) {
+        afficherEcranProfil();
+    } else {
+        majBoutonsConfig();
+        afficherEcran("zone-config");
+    }
+}
+
+// =====================================================================
+// CONFIG ET JEU
+// =====================================================================
+async function demarrerPartie() {
+    longueurMot = parseInt($("select-longueur").value, 10);
+    resetMsg("msg-config");
+    $("btn-demarrer").disabled = true;
+    // Sans compte connecte, on ne transmet pas de joueurId : la partie
+    // reste jouable normalement mais n'est ni historisee ni classee
+    // (voir PartieService.proposerMot cote Service Partie).
+    const corps = joueurConnecte
+        ? { joueurId: joueurConnecte.id, longueur: longueurMot }
+        : { longueur: longueurMot };
+    try {
+        const rep = await fetch(`${URL_PARTIE}/api/parties`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(corps)
+        });
+        if (!rep.ok) {
+            const err = await rep.json();
+            setMsg("msg-config", err.message || "Impossible de créer la partie.", "erreur");
+            $("btn-demarrer").disabled = false;
+            return;
+        }
+        partieEnCours = await rep.json();
+        ligneCourante = 0;
+        lancerInterfaceJeu();
+    } catch (e) {
+        setMsg("msg-config", "Service partie inaccessible (port 8082).", "erreur");
+        $("btn-demarrer").disabled = false;
+    }
+}
+
+function lancerInterfaceJeu() {
+    afficherEcran("zone-jeu");
+    $("info-joueur").textContent = joueurConnecte ? "Joueur : " + joueurConnecte.pseudo : "";
+    majInfosEssais();
+
+    // La 1re lettre est donnee (regle du jeu). Elle est affichee,
+    // verrouillee, en tete de CHAQUE ligne ; le joueur saisit le reste.
+    premiereLettre = partieEnCours.premiereLettreMotMystere;
+    statutsLettres = {};
+    majAffichageClavier();
+
+    $("msg-jeu").textContent = `Le mot commence par « ${premiereLettre} » et fait ${longueurMot} lettres.`;
+    $("msg-jeu").className   = "message info";
+
+    construireGrille();
+}
+
+/**
+ * (Re)construit toute la grille a partir de l'etat courant :
+ *  - les essais deja faits (partieEnCours.propositions) sont affiches
+ *    en cases figees, colorees selon le resultat ;
+ *  - la ligne suivante est la ligne "active" : des <input> individuels,
+ *    un par lettre, avec les lettres deja trouvees BIEN_PLACEE
+ *    pre-remplies et verrouillees (comme au vrai Motus, contrairement
+ *    a Wordle ou chaque ligne repart de zero) ;
+ *  - les lignes restantes sont de simples cases vides.
+ */
+function construireGrille() {
+    const grille = $("grille");
+    grille.innerHTML = "";
+    const cols = `repeat(${longueurMot}, 56px)`;
+    const propositions = partieEnCours.propositions || [];
+
+    for (let l = 0; l < partieEnCours.nbEssaisMax; l++) {
+        const ligne = document.createElement("div");
+        ligne.className = "ligne";
+        ligne.style.gridTemplateColumns = cols;
+
+        if (l < propositions.length) {
+            const prop    = propositions[l];
+            const statuts = prop.resultat.split(",");
+            for (let c = 0; c < longueurMot; c++) {
+                const case_ = document.createElement("div");
+                const s = statuts[c];
+                case_.className = "case " +
+                    (s === "BIEN_PLACEE" ? "bien" : s === "MAL_PLACEE" ? "mal" : "absente");
+                case_.innerHTML = `<span>${prop.motPropose.charAt(c)}</span>`;
+                ligne.appendChild(case_);
+            }
+        } else if (l === propositions.length && partieEnCours.statut === "EN_COURS") {
+            // Ligne active : la 1re case affiche la lettre donnee (verrouillee),
+            // les autres sont vides. Aucune lettre des essais precedents n'est
+            // reportee : chaque ligne repart de zero.
+            for (let c = 0; c < longueurMot; c++) {
+                const input = document.createElement("input");
+                input.type = "text";
+                input.maxLength = 1;
+                input.autocomplete = "off";
+                input.className = "case-saisie";
+                input.dataset.pos = c;
+                if (c === 0) {
+                    input.value = premiereLettre;
+                    input.classList.add("donnee");
+                    input.disabled = true;   // lettre donnee : non modifiable
+                } else {
+                    input.addEventListener("keydown", onKeydownCase);
+                }
+                ligne.appendChild(input);
+            }
+        } else {
+            for (let c = 0; c < longueurMot; c++) {
+                const case_ = document.createElement("div");
+                case_.className = "case";
+                ligne.appendChild(case_);
+            }
+        }
+        grille.appendChild(ligne);
+    }
+    focusPremiereCaseEditable();
+}
+
+function focusPremiereCaseEditable() {
+    const premiere = document.querySelector(".case-saisie");
+    if (premiere) premiere.focus();
+}
+
+function focusCaseSuivante(pos) {
+    const suivante = document.querySelector(`.case-saisie[data-pos="${pos + 1}"]`);
+    if (suivante) suivante.focus();
+}
+
+function focusCasePrecedente(pos) {
+    if (pos <= 0) return;
+    const precedente = document.querySelector(`.case-saisie[data-pos="${pos - 1}"]`);
+    if (precedente) precedente.focus();
+}
+
+function onSaisieLettre(e) {
+    const input = e.target;
+    input.value = input.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+    // Des qu'on modifie une case (meme pre-remplie), elle perd son
+    // repere visuel "confirme" tant qu'elle n'est pas re-validee.
+    input.classList.remove("bien");
+    if (input.value) {
+        focusCaseSuivante(parseInt(input.dataset.pos, 10));
+    }
+}
+
+function onKeydownCase(e) {
+    const pos = parseInt(e.target.dataset.pos, 10);
+    if (e.key === "Backspace" && !e.target.value) {
+        e.preventDefault();
+        focusCasePrecedente(pos);
+    } else if (e.key === "ArrowRight") {
+        focusCaseSuivante(pos);
+    } else if (e.key === "ArrowLeft") {
+        focusCasePrecedente(pos);
+    } else if (e.key === "Enter") {
+        validerProposition();
+    }
+}
+
+/** Met a jour lettresConnues avec les positions BIEN_PLACEE de cette proposition. */
+function mettreAJourLettresConnues(proposition) {
+    const statuts = proposition.resultat.split(",");
+    for (let c = 0; c < statuts.length; c++) {
+        if (statuts[c] === "BIEN_PLACEE") {
+            lettresConnues[c] = proposition.motPropose.charAt(c);
+        }
+    }
+}
+
+/**
+ * Met a jour statutsLettres avec le MEILLEUR statut observe pour
+ * chaque lettre du mot propose (une lettre trouvee bien placee une
+ * fois reste verte, meme si un autre essai l'a montree ailleurs).
+ */
+function mettreAJourStatutsLettres(proposition) {
+    const priorite = { bien: 3, mal: 2, absente: 1 };
+    const statuts  = proposition.resultat.split(",");
+    for (let c = 0; c < statuts.length; c++) {
+        const lettre = proposition.motPropose.charAt(c);
+        const statut = statuts[c] === "BIEN_PLACEE" ? "bien"
+                     : statuts[c] === "MAL_PLACEE"  ? "mal"
+                     : "absente";
+        if (!statutsLettres[lettre] || priorite[statut] > priorite[statutsLettres[lettre]]) {
+            statutsLettres[lettre] = statut;
+        }
+    }
+}
+
+/** Applique les couleurs de statutsLettres sur le clavier virtuel. */
+function majAffichageClavier() {
+    document.querySelectorAll(".touche-clavier[data-lettre]").forEach(touche => {
+        touche.classList.remove("bien", "mal", "absente");
+        const statut = statutsLettres[touche.dataset.lettre];
+        if (statut) touche.classList.add(statut);
+    });
+}
+
+/** Ecrit une lettre dans la case actuellement focalisee (ou la 1re case). */
+function cliquerToucheClavier(lettre) {
+    let cible = document.activeElement;
+    if (!cible || !cible.classList || !cible.classList.contains("case-saisie")) {
+        cible = document.querySelector(".case-saisie");
+    }
+    if (!cible) return;
+    cible.value = lettre;
+    cible.classList.remove("bien");
+    cible.focus();
+    focusCaseSuivante(parseInt(cible.dataset.pos, 10));
+}
+
+/** Efface la case active, ou recule d'une case si elle est deja vide. */
+function cliquerEffacer() {
+    let cible = document.activeElement;
+    if (!cible || !cible.classList || !cible.classList.contains("case-saisie")) {
+        return;
+    }
+    const pos = parseInt(cible.dataset.pos, 10);
+    if (cible.value) {
+        cible.value = "";
+        cible.classList.remove("bien");
+    } else if (pos > 0) {
+        focusCasePrecedente(pos);
+        const precedente = document.activeElement;
+        if (precedente && precedente.classList.contains("case-saisie")) {
+            precedente.value = "";
+            precedente.classList.remove("bien");
+        }
+    }
+}
+
+async function validerProposition() {
+    const inputs = document.querySelectorAll(".case-saisie");
+    const mot = Array.from(inputs).map(i => i.value).join("").toUpperCase();
+    if (mot.length !== longueurMot) {
+        afficherMessageJeu(`Complétez les ${longueurMot} lettres.`, "erreur");
+        return;
+    }
+    $("btn-valider").disabled = true;
+    try {
+        const rep = await fetch(`${URL_PARTIE}/api/parties/${partieEnCours.id}/propositions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ motPropose: mot })
+        });
+        if (!rep.ok) {
+            const err = await rep.json();
+            afficherMessageJeu(err.message || "Proposition refusée.", "erreur");
+            $("btn-valider").disabled = false;
+            return;
+        }
+        partieEnCours = await rep.json();
+        const props   = partieEnCours.propositions;
+        mettreAJourLettresConnues(props[props.length - 1]);
+        mettreAJourStatutsLettres(props[props.length - 1]);
+        majAffichageClavier();
+        majInfosEssais();
+
+        if (partieEnCours.statut === "GAGNEE") {
+            construireGrille();
+            terminerPartie(true);
+        } else if (partieEnCours.statut === "PERDUE") {
+            construireGrille();
+            terminerPartie(false);
+        } else {
+            ligneCourante++;
+            construireGrille();
+            $("btn-valider").disabled = false;
+            afficherMessageJeu("Essai suivant !", "info");
+        }
+    } catch (e) {
+        afficherMessageJeu("Erreur de communication avec le service.", "erreur");
+        $("btn-valider").disabled = false;
+    }
+}
+
+function terminerPartie(gagne) {
+    $("btn-valider").disabled = true;
+    if (gagne) {
+        afficherMessageJeu(
+            `Bravo ! Vous avez trouvé « ${partieEnCours.motMystere} » en ${partieEnCours.nbEssaisUtilises} essai(s).`,
+            "gagne");
+    } else {
+        afficherMessageJeu(`Perdu ! Le mot était « ${partieEnCours.motMystere} ».`, "perdu");
+    }
+    setTimeout(retourProfil, 3000);
+}
+
+// =====================================================================
+// CLASSEMENT
+// =====================================================================
+async function chargerClassement() {
+    try {
+        const rep     = await fetch(`${URL_JOUEUR}/api/joueurs/classement`);
+        const joueurs = await rep.json();
+        joueursList   = joueurs;
+        peuplerFiltreJoueurs();
+        const corps  = $("corps-classement");
+        corps.innerHTML = "";
+        if (joueurs.length === 0) {
+            corps.innerHTML = "<tr><td colspan='5'>Aucun joueur</td></tr>";
+            return;
+        }
+        joueurs.forEach((j, i) => {
+            const resultats   = j.resultats || [];
+            const nbParties   = resultats.length;
+            const nbVictoires = resultats.filter(r => r.gagnee).length;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${i + 1}</td><td>${j.pseudo}</td><td>${j.scoreTotal}</td><td>${nbParties}</td><td>${nbVictoires}</td>`;
+            corps.appendChild(tr);
+        });
+    } catch (e) {
+        $("corps-classement").innerHTML = "<tr><td colspan='5'>Service Joueur indisponible</td></tr>";
+    }
+}
+
+function peuplerFiltreJoueurs() {
+    const sel = $("admin-joueur");
+    while (sel.options.length > 1) sel.remove(1);
+    joueursList.forEach(j => {
+        const opt = document.createElement("option");
+        opt.value = j.id;
+        opt.textContent = j.pseudo;
+        sel.appendChild(opt);
+    });
+}
+
+// =====================================================================
+// ADMINISTRATION
+// =====================================================================
+async function chargerAdmin() {
+    await rechercherParties();
+}
+
+async function rechercherParties() {
+    // Zone reservee aux admins : sans joueur ADMIN connecte, le
+    // Service Partie refusera de toute facon la requete (403).
+    if (!joueurConnecte || joueurConnecte.role !== "ADMIN") {
+        return;
+    }
+
+    const joueurId  = $("admin-joueur").value;
+    const statut    = $("admin-statut").value;
+    const dateDebut = $("admin-date-debut").value;
+    const dateFin   = $("admin-date-fin").value;
+
+    const params = new URLSearchParams();
+    params.set("adminId", joueurConnecte.id);
+    if (joueurId)  params.set("joueurId", joueurId);
+    if (statut)    params.set("statut", statut);
+    if (dateDebut) params.set("dateDebut", dateDebut);
+    if (dateFin)   params.set("dateFin", dateFin);
+
+    $("admin-info").textContent  = "Chargement…";
+    $("admin-corps").innerHTML   = "";
+
+    try {
+        const url = `${URL_PARTIE}/api/parties?${params}`;
+        const rep = await fetch(url);
+        if (!rep.ok) {
+            const err = await rep.json();
+            $("admin-info").textContent = err.message || "Accès refusé.";
+            return;
+        }
+        const parties = await rep.json();
+        dernieresPartiesAdmin = parties;
+        afficherResultatsAdmin(parties);
+    } catch (e) {
+        $("admin-info").textContent = "Service Partie indisponible (port 8082).";
+    }
+}
+
+function reinitialiserAdmin() {
+    $("admin-joueur").value      = "";
+    $("admin-statut").value      = "";
+    $("admin-date-debut").value  = "";
+    $("admin-date-fin").value    = "";
+    $("admin-tri").value         = "date";
+    rechercherParties();
+}
+
+function afficherResultatsAdmin(parties) {
+    const corps = $("admin-corps");
+    corps.innerHTML = "";
+    $("admin-info").textContent = parties.length + " partie(s) trouvée(s).";
+    if (parties.length === 0) {
+        corps.innerHTML = `<tr><td colspan="8" class="vide">Aucune partie ne correspond aux critères.</td></tr>`;
+        return;
+    }
+    const STATUT_BADGE = {
+        EN_COURS: '<span class="badge" style="background:#2a4cbf">En cours</span>',
+        GAGNEE:   '<span class="badge gagne">Gagnée</span>',
+        PERDUE:   '<span class="badge perdu">Perdue</span>'
+    };
+    const fmtDate = iso => new Date(iso).toLocaleString("fr-FR",
+        { day: "2-digit", month: "2-digit", year: "2-digit",
+          hour: "2-digit", minute: "2-digit" });
+
+    // Deux criteres de tri disponibles (cf. enonce du projet, §2.1 :
+    // "lister/rechercher... sur des criteres tels que la date, le
+    // joueur, le classement") : par date, ou par "classement" au sens
+    // performance de la partie (nombre d'essais, le moins possible
+    // etant la meilleure performance - coherent avec le calcul du
+    // score cote Service Joueur : 100 - 10 x nbEssais).
+    const triSelectionne = $("admin-tri").value;
+    const comparateur = triSelectionne === "essais"
+        ? (a, b) => a.nbEssaisUtilises - b.nbEssaisUtilises
+        : (a, b) => new Date(b.dateDebut) - new Date(a.dateDebut);
+
+    [...parties]
+        .sort(comparateur)
+        .forEach(p => {
+            const joueur     = joueursList.find(j => j.id === p.joueurId);
+            const joueurLabel = joueur ? joueur.pseudo : "Joueur #" + p.joueurId;
+            const mot        = p.statut === "EN_COURS" ? "?".repeat(p.longueur) : p.motMystere;
+            const badge      = STATUT_BADGE[p.statut] || p.statut;
+            const dateFin    = p.dateFin ? fmtDate(p.dateFin) : "—";
+            const tr         = document.createElement("tr");
+            tr.innerHTML = `<td>${p.id}</td><td>${joueurLabel}</td><td>${mot}</td>` +
+                `<td>${p.longueur}</td><td>${badge}</td>` +
+                `<td>${p.nbEssaisUtilises}/${p.nbEssaisMax}</td>` +
+                `<td>${fmtDate(p.dateDebut)}</td><td>${dateFin}</td>`;
+            corps.appendChild(tr);
+        });
+}
+
+/**
+ * Ajoute un mot au dictionnaire (Service Dico). Le service refuse
+ * (400) tout mot qui n'est pas un mot francais reconnu ou deja
+ * present ; le message d'erreur renvoye par l'API est affiche tel quel.
+ */
+async function ajouterMotDictionnaire() {
+    const champ  = $("admin-nouveau-mot");
+    const valeur = champ.value.trim();
+    resetMsg("msg-admin-mot");
+    if (!valeur) {
+        setMsg("msg-admin-mot", "Veuillez saisir un mot.", "erreur");
+        return;
+    }
+    try {
+        const rep = await fetch(`${URL_DICO}/api/mots`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ valeur, langue: "FR" })
+        });
+        const data = await rep.json();
+        if (!rep.ok) {
+            setMsg("msg-admin-mot", data.message || "Mot refusé.", "erreur");
+            return;
+        }
+        setMsg("msg-admin-mot",
+            `« ${data.valeur} » ajouté au dictionnaire (${data.longueur} lettres).`, "ok");
+        champ.value = "";
+    } catch (e) {
+        setMsg("msg-admin-mot", "Service Dico inaccessible (port 8083).", "erreur");
+    }
+}
+
+// =====================================================================
+// UTILITAIRES
+// =====================================================================
+function afficherEcran(id) {
+    ["zone-auth", "zone-profil", "zone-config", "zone-jeu"].forEach(z => {
+        $(z).style.display = z === id ? "block" : "none";
+    });
+}
+function majInfosEssais() {
+    $("info-essais").textContent =
+        `Essais : ${partieEnCours.nbEssaisUtilises} / ${partieEnCours.nbEssaisMax}`;
+}
+function afficherMessageJeu(texte, type) {
+    const m = $("msg-jeu");
+    m.textContent = texte;
+    m.className   = "message " + type;
+}
+function setMsg(id, texte, type) {
+    const m = $(id);
+    m.textContent = texte;
+    m.className   = "msg-inline " + type;
+}
+function resetMsg(id) {
+    const m = $(id);
+    m.textContent = "";
+    m.className   = "msg-inline";
+}
+</script>
+</body>
+</html>

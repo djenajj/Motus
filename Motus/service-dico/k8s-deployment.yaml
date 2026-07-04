@@ -1,0 +1,50 @@
+# ===================================================================
+# Manifeste Kubernetes du Service Dico
+# Permet de deployer le microservice sur un cluster MiniKube.
+#
+# Ce fichier definit deux objets :
+#  - un Deployment : qui lance et maintient le conteneur ;
+#  - un Service    : qui expose le conteneur sur le reseau.
+# ===================================================================
+
+# ---- Deployment ----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-dico
+  labels:
+    app: service-dico
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-dico
+  template:
+    metadata:
+      labels:
+        app: service-dico
+    spec:
+      containers:
+        - name: service-dico
+          image: service-dico:1.0.0
+          # imagePullPolicy: Never -> utilise l'image construite
+          # localement dans le Docker de MiniKube (pas de telechargement)
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+
+---
+# ---- Service ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-dico
+spec:
+  # NodePort : rend le service accessible depuis l'exterieur du cluster
+  type: NodePort
+  selector:
+    app: service-dico
+  ports:
+    - port: 8083
+      targetPort: 8083
+      nodePort: 30083
